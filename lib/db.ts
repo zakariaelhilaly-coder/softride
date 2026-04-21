@@ -1,30 +1,21 @@
-// @ts-ignore - node:sqlite is available in Node.js 22+ (experimental flag required for <24)
-import { DatabaseSync } from 'node:sqlite'
-import path from 'path'
+import { createClient } from '@libsql/client'
 
-const DB_PATH = path.join(process.cwd(), 'softride.db')
-
-let db: InstanceType<typeof DatabaseSync>
-
-function getDb(): InstanceType<typeof DatabaseSync> {
-  if (!db) {
-    db = new DatabaseSync(DB_PATH)
-    db.exec('PRAGMA journal_mode = WAL')
-    db.exec('PRAGMA foreign_keys = ON')
-    initDb()
-  }
-  return db
+function getClient() {
+  return createClient({
+    url: process.env.TURSO_DATABASE_URL || 'file:softride.db',
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  })
 }
 
-function initDb() {
-  db.exec(`
+export async function initDb() {
+  const db = getClient()
+  await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       slug TEXT NOT NULL UNIQUE,
       icon TEXT DEFAULT '🛴'
     );
-
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -38,29 +29,41 @@ function initDb() {
       description TEXT,
       stock INTEGER DEFAULT 10,
       featured INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (category_id) REFERENCES categories(id)
+      created_at TEXT DEFAULT (datetime('now'))
     );
-
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
   `)
-
-  const settingsData = [
+  const defaults: [string, string][] = [
     ['whatsapp', '212770892279'],
     ['email', 'contact@softride.ma'],
     ['address', 'Rabat • Salé • Kénitra, Maroc'],
     ['admin_password', 'softride2025'],
     ['instagram', '@softride000'],
   ]
-  for (const [key, value] of settingsData) {
-    db.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`).run(key, value)
+  for (const [key, value] of defaults) {
+    await db.execute({ sql: 'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', args: [key, value] })
   }
 }
 
-export default getDb
+export async function query<T = Record<string, unknown>>(sql: string, args: (string | number | null)[] = []): Promise<T[]> {
+  const db = getClient()
+  const result = await db.execute({ sql, args })
+  return result.rows as unknown as T[]
+}
+
+export async function queryOne<T = Record<string, unknown>>(sql: string, args: (string | number | null)[] = []): Promise<T | null> {
+  const rows = await query<T>(sql, args)
+  return rows[0] ?? null
+}
+
+export async function run(sql: string, args: (string | number | null)[] = []) {
+  const db = getClient()
+  const result = await db.execute({ sql, args })
+  return { lastInsertRowid: Number(result.lastInsertRowid ?? 0), changes: result.rowsAffected }
+}
 
 export interface Product {
   id: number

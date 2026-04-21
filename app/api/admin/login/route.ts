@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateToken, setAdminCookie } from '@/lib/auth'
-import getDb from '@/lib/db'
+import { initDb, queryOne } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
+  await initDb()
   const { password } = await req.json()
-  const db = getDb()
-  const setting = db.prepare(`SELECT value FROM settings WHERE key = 'admin_password'`).get() as { value: string } | undefined
+  const setting = await queryOne<{ value: string }>(`SELECT value FROM settings WHERE key = 'admin_password'`)
   const storedPassword = setting?.value || 'softride2025'
 
   if (password !== storedPassword) {
@@ -14,13 +14,7 @@ export async function POST(req: NextRequest) {
 
   const token = generateToken()
   const signed = setAdminCookie(token)
-
   const res = NextResponse.json({ success: true })
-  res.cookies.set('softride_admin', signed, {
-    httpOnly: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24, // 24h
-  })
+  res.cookies.set('softride_admin', signed, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 })
   return res
 }

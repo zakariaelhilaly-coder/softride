@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import getDb from '@/lib/db'
+import { initDb, query, run } from '@/lib/db'
 import { isAdminAuthenticated } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const db = getDb()
-  const categories = db.prepare(`SELECT * FROM categories ORDER BY name`).all()
+  await initDb()
+  const categories = await query(`SELECT * FROM categories ORDER BY name`)
   return NextResponse.json(categories)
 }
 
 export async function POST(req: NextRequest) {
   if (!isAdminAuthenticated()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const db = getDb()
+  await initDb()
   const { name, slug, icon } = await req.json()
-  const result = db.prepare(`INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?)`).run(name, slug, icon || '🛴')
+  const result = await run(`INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?)`, [name, slug, icon || '🛴'])
   return NextResponse.json({ id: result.lastInsertRowid })
 }

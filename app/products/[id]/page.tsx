@@ -4,36 +4,29 @@ import Footer from '@/components/Footer'
 import CartSidebar from '@/components/CartSidebar'
 import ImageCarousel from '@/components/ImageCarousel'
 import AddToCartButton from './AddToCartButton'
-import getDb, { Product } from '@/lib/db'
+import { initDb, queryOne, query, Product } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-function getProduct(id: string): Product | null {
-  const db = getDb()
-  return db.prepare(`
+export default async function ProductDetailPage({ params }: { params: { id: string } }) {
+  await initDb()
+
+  const product = await queryOne<Product>(`
     SELECT p.*, c.name as category_name, c.slug as category_slug
     FROM products p LEFT JOIN categories c ON p.category_id = c.id
     WHERE p.id = ?
-  `).get(id) as Product | null
-}
+  `, [Number(params.id)])
 
-function getRelated(categoryId: number | null, excludeId: number): Product[] {
-  if (!categoryId) return []
-  const db = getDb()
-  return db.prepare(`
-    SELECT p.*, c.name as category_name FROM products p
-    LEFT JOIN categories c ON p.category_id = c.id
-    WHERE p.category_id = ? AND p.id != ? LIMIT 4
-  `).all(categoryId, excludeId) as Product[]
-}
-
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const product = getProduct(params.id)
   if (!product) notFound()
 
   const images: string[] = JSON.parse(product.images || '[]')
   const discount = product.old_price ? Math.round((1 - product.price / product.old_price) * 100) : null
-  const related = getRelated(product.category_id, product.id)
+
+  const related = product.category_id ? await query<Product>(`
+    SELECT p.*, c.name as category_name FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    WHERE p.category_id = ? AND p.id != ? LIMIT 4
+  `, [product.category_id, product.id]) : []
 
   const waMessage = `Bonjour Softride 👋\n\nJe suis intéressé par:\n*${product.name}*\nPrix: ${product.price.toLocaleString()} MAD\n\nMerci!`
 
@@ -42,26 +35,21 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
       <Header />
       <CartSidebar />
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Breadcrumb */}
         <nav className="text-sm text-gray-500 mb-6">
           <a href="/" className="hover:text-primary">Accueil</a>
           <span className="mx-2">›</span>
           <a href="/products" className="hover:text-primary">Produits</a>
           {product.category_name && (
-            <>
-              <span className="mx-2">›</span>
-              <a href={`/products?category=${product.category_slug}`} className="hover:text-primary">{product.category_name}</a>
-            </>
+            <><span className="mx-2">›</span>
+            <a href={`/products?category=${product.category_slug}`} className="hover:text-primary">{product.category_name}</a></>
           )}
           <span className="mx-2">›</span>
           <span className="text-dark">{product.name}</span>
         </nav>
 
         <div className="grid md:grid-cols-2 gap-8 mb-12">
-          {/* Images */}
           <ImageCarousel images={images} productName={product.name} />
 
-          {/* Info */}
           <div>
             {product.badge && (
               <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 ${
@@ -73,30 +61,19 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             )}
 
             <h1 className="text-2xl font-bold text-dark mb-2">{product.name}</h1>
-
-            {/* Stars */}
             <div className="flex items-center gap-2 mb-4">
               <span className="text-accent">★★★★★</span>
               <span className="text-sm text-gray-500">(5.0)</span>
             </div>
 
-            {/* Price */}
             <div className="flex items-baseline gap-3 mb-4">
               <span className="text-3xl font-bold text-primary">{product.price.toLocaleString()} MAD</span>
-              {product.old_price && (
-                <span className="text-xl text-gray-400 line-through">{product.old_price.toLocaleString()} MAD</span>
-              )}
-              {discount && (
-                <span className="bg-red-100 text-red-600 text-sm font-bold px-2 py-0.5 rounded-lg">-{discount}%</span>
-              )}
+              {product.old_price && <span className="text-xl text-gray-400 line-through">{product.old_price.toLocaleString()} MAD</span>}
+              {discount && <span className="bg-red-100 text-red-600 text-sm font-bold px-2 py-0.5 rounded-lg">-{discount}%</span>}
             </div>
 
-            {/* Description */}
-            {product.description && (
-              <p className="text-gray-600 mb-4 arabic leading-relaxed">{product.description}</p>
-            )}
+            {product.description && <p className="text-gray-600 mb-4 arabic leading-relaxed">{product.description}</p>}
 
-            {/* Specs */}
             {(product.speed || product.range) && (
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {product.speed && (
@@ -116,7 +93,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               </div>
             )}
 
-            {/* Stock */}
             <div className="flex items-center gap-2 mb-6">
               <span className={`w-2 h-2 rounded-full ${product.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
               <span className="text-sm text-gray-600">
@@ -124,26 +100,15 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               </span>
             </div>
 
-            {/* Actions */}
             <div className="space-y-3">
-              <AddToCartButton
-                id={product.id}
-                name={product.name}
-                price={product.price}
-                image={images[0] || ''}
-              />
-              <a
-                href={`https://wa.me/212770892279?text=${encodeURIComponent(waMessage)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1da851] text-white font-semibold py-3 rounded-xl transition-colors whatsapp-pulse"
-              >
-                <span className="text-xl">💬</span>
-                Commander via WhatsApp
+              <AddToCartButton id={product.id} name={product.name} price={product.price} image={images[0] || ''} />
+              <a href={`https://wa.me/212770892279?text=${encodeURIComponent(waMessage)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1da851] text-white font-semibold py-3 rounded-xl transition-colors whatsapp-pulse">
+                <span className="text-xl">💬</span>Commander via WhatsApp
               </a>
             </div>
 
-            {/* Guarantees */}
             <div className="grid grid-cols-3 gap-2 mt-6 pt-6 border-t">
               {[
                 { icon: '🛡️', text: 'Garantie 2 ans' },
@@ -159,7 +124,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           </div>
         </div>
 
-        {/* Related products */}
         {related.length > 0 && (
           <div>
             <h2 className="text-xl font-bold text-dark mb-4">Produits similaires</h2>

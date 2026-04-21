@@ -4,25 +4,20 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CartSidebar from '@/components/CartSidebar'
 import ProductCard from '@/components/ProductCard'
-import getDb, { Product } from '@/lib/db'
+import { initDb, query, Product, Category } from '@/lib/db'
 
-function getFeaturedProducts(): Product[] {
-  const db = getDb()
-  return db.prepare(`
+export const dynamic = 'force-dynamic'
+
+export default async function HomePage() {
+  await initDb()
+
+  const featured = await query<Product>(`
     SELECT p.*, c.name as category_name, c.slug as category_slug
     FROM products p LEFT JOIN categories c ON p.category_id = c.id
     WHERE p.featured = 1 ORDER BY p.created_at DESC LIMIT 8
-  `).all() as Product[]
-}
+  `)
 
-function getCategories() {
-  const db = getDb()
-  return db.prepare(`SELECT * FROM categories`).all() as { id: number; name: string; slug: string; icon: string }[]
-}
-
-export default function HomePage() {
-  const featured = getFeaturedProducts()
-  const categories = getCategories()
+  const categories = await query<Category>(`SELECT * FROM categories`)
 
   return (
     <>
@@ -52,8 +47,6 @@ export default function HomePage() {
                   💬 Contactez-nous
                 </a>
               </div>
-
-              {/* Stats */}
               <div className="flex gap-6 mt-8">
                 {[
                   { value: '500+', label: 'Clients satisfaits' },
@@ -67,15 +60,8 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-
             <div className="relative h-64 lg:h-96 rounded-2xl overflow-hidden">
-              <Image
-                src="/images/banner/hero-image.jpg"
-                alt="Trottinette électrique Softride"
-                fill
-                className="object-cover"
-                priority
-              />
+              <Image src="/images/banner/hero-image.jpg" alt="Trottinette électrique Softride" fill className="object-cover" priority />
               <div className="absolute inset-0 bg-gradient-to-t from-dark/40 to-transparent" />
             </div>
           </div>
@@ -109,11 +95,8 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold text-dark mb-6">Nos catégories</h2>
             <div className="grid grid-cols-3 gap-4">
               {categories.map(cat => (
-                <Link
-                  key={cat.id}
-                  href={`/products?category=${cat.slug}`}
-                  className="group bg-white rounded-2xl p-6 text-center shadow-sm border hover:border-primary hover:shadow-md transition-all"
-                >
+                <Link key={cat.id} href={`/products?category=${cat.slug}`}
+                  className="group bg-white rounded-2xl p-6 text-center shadow-sm border hover:border-primary hover:shadow-md transition-all">
                   <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">{cat.icon}</div>
                   <p className="font-semibold text-dark text-sm">{cat.name}</p>
                 </Link>
@@ -127,40 +110,24 @@ export default function HomePage() {
           <section className="max-w-7xl mx-auto px-4 py-4 pb-14">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-dark">Produits vedettes</h2>
-              <Link href="/products" className="text-primary hover:text-primary-dark font-medium text-sm">
-                Voir tout →
-              </Link>
+              <Link href="/products" className="text-primary hover:text-primary-dark font-medium text-sm">Voir tout →</Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {featured.map(p => (
-                <ProductCard
-                  key={p.id}
-                  id={p.id}
-                  name={p.name}
-                  price={p.price}
-                  oldPrice={p.old_price}
-                  images={JSON.parse(p.images || '[]')}
-                  badge={p.badge}
-                  speed={p.speed}
-                  range={p.range}
-                  description={p.description}
-                />
+                <ProductCard key={p.id} id={p.id} name={p.name} price={p.price} oldPrice={p.old_price}
+                  images={JSON.parse(p.images || '[]')} badge={p.badge} speed={p.speed} range={p.range} />
               ))}
             </div>
           </section>
         )}
 
-        {/* CTA Banner */}
+        {/* CTA */}
         <section className="bg-gradient-to-r from-primary to-primary-dark text-white py-12">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <h2 className="text-2xl font-bold mb-2">Prêt à rouler électrique ? ⚡</h2>
             <p className="text-white/80 mb-6">Contactez-nous sur WhatsApp pour plus d&apos;informations</p>
-            <a
-              href="https://wa.me/212770892279"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-white text-primary font-bold px-8 py-3 rounded-xl hover:bg-gray-50 transition-colors whatsapp-pulse"
-            >
+            <a href="https://wa.me/212770892279" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-white text-primary font-bold px-8 py-3 rounded-xl hover:bg-gray-50 transition-colors whatsapp-pulse">
               💬 Commandez maintenant
             </a>
           </div>
