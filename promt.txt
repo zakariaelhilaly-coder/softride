@@ -1,0 +1,90 @@
+Build me a complete professional e-commerce website for "Softride" - a Moroccan electric scooter reselling business based in Rabat, Salé and Kénitra.
+
+TECH STACK:
+- Next.js 14 with App Router
+- Tailwind CSS
+- SQLite database (better-sqlite3)
+- Custom admin auth (no library)
+
+BRAND:
+- Name: Softride
+- Colors: Primary green #10b981, Dark #0a1628, Accent yellow #fbbf24
+- Slogan: "تنقل ذكي بثمن أذكى"
+- Language: Arabic + French mixed (bilingual)
+- Location: Rabat • Salé • Kénitra, Maroc
+
+IMAGES (already in /public/images/):
+- /public/images/logo/softride-logo.png
+- /public/images/products/xiaomi-essential-1.jpg
+- /public/images/products/xiaomi-essential-2.jpg
+- /public/images/products/dualtron-popular-1.jpg
+- /public/images/products/dualtron-popular-2.jpg
+- /public/images/products/dualtron-popular-3.jpg
+- /public/images/banner/hero-image.jpg
+
+PAGES:
+1. Homepage — hero, categories, featured products, features bar
+2. Products page — filters by category
+3. Product detail page — image gallery, WhatsApp order button
+4. About page
+5. Contact page
+6. Admin dashboard — password protected "softride2025"
+
+PRODUCTS TO ADD IN DATABASE:
+1. Name: Xiaomi Mi Essential
+   Category: Trottinette
+   Price: 1449 MAD
+   Old price: 3500 MAD
+   Speed: 25 km/h
+   Range: 25 km
+   Images: xiaomi-essential-1.jpg, xiaomi-essential-2.jpg
+   Badge: PROMO
+   Description: تروتينة Xiaomi بحال الجديدة | 25 كلم/س | 25 كلم استقلالية
+
+2. Name: Dualtron Popular
+   Category: Trottinette
+   Price: 4850 MAD
+   Old price: null
+   Speed: 60 km/h
+   Range: 50 km
+   Images: dualtron-popular-1.jpg, dualtron-popular-2.jpg, dualtron-popular-3.jpg
+   Badge: TOP VENTE
+   Description: تروتينة Dualtron Popular بحال الجديدة | 60 كلم/س | 50 كلم استقلالية
+
+FEATURES:
+- Shopping cart with WhatsApp checkout
+- Real search bar
+- Product badges (PROMO, NOUVEAU, TOP VENTE, STOCK LIMITÉ)
+- Show original price crossed out + discount percentage
+- Star ratings
+- 100% mobile responsive
+- WhatsApp button on every product: wa.me/212600000000
+- Image carousel on product detail page
+
+ADMIN PANEL:
+- Login with password "softride2025"
+- Add / Edit / Delete products
+- Image management (local files)
+- Categories management
+- Site settings (WhatsApp number, email, location)
+- Change admin password
+
+DESIGN:
+- Clean white modern like Jumia / Mytek.ma
+- Top bar: "🚚 Livraison gratuite à partir de 2000 MAD"
+- Sticky header with logo + search + cart
+- Navigation: Accueil | Produits | Trottinettes | Pièces | Accessoires | Contact
+- Product cards with hover effects
+- Footer with 4 columns + social links (Instagram: @softride000)
+
+SEO:
+- Title: Softride | Trottinettes électriques au Maroc
+- Meta description in French and Arabic
+- Optimized for: trottinette maroc, trottinette rabat, xiaomi maroc
+
+Please:
+1. Create ALL files and folders
+2. Install ALL dependencies automatically
+3. Seed the database with the 2 products
+4. Give me the exact command to run: npm run dev
+5. Make sure images load correctly from /public/images/
