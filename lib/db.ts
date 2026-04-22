@@ -1,41 +1,45 @@
-import { createClient } from '@libsql/client'
+import { createClient } from '@libsql/client/web'
 
 function getClient() {
-  return createClient({
-    url: process.env.TURSO_DATABASE_URL || 'file:softride.db',
-    authToken: process.env.TURSO_AUTH_TOKEN,
-  })
+  const url = process.env.TURSO_DATABASE_URL
+  const authToken = process.env.TURSO_AUTH_TOKEN
+
+  if (!url) throw new Error('TURSO_DATABASE_URL is not set')
+
+  return createClient({ url, authToken })
 }
 
 export async function initDb() {
   const db = getClient()
-  await db.executeMultiple(`
-    CREATE TABLE IF NOT EXISTS categories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      slug TEXT NOT NULL UNIQUE,
-      icon TEXT DEFAULT '🛴'
-    );
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      category_id INTEGER,
-      price INTEGER NOT NULL,
-      old_price INTEGER,
-      speed INTEGER,
-      range INTEGER,
-      images TEXT DEFAULT '[]',
-      badge TEXT,
-      description TEXT,
-      stock INTEGER DEFAULT 10,
-      featured INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    );
-  `)
+
+  await db.execute(`CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    icon TEXT DEFAULT '🛴'
+  )`)
+
+  await db.execute(`CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category_id INTEGER,
+    price INTEGER NOT NULL,
+    old_price INTEGER,
+    speed INTEGER,
+    range INTEGER,
+    images TEXT DEFAULT '[]',
+    badge TEXT,
+    description TEXT,
+    stock INTEGER DEFAULT 10,
+    featured INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`)
+
+  await db.execute(`CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  )`)
+
   const defaults: [string, string][] = [
     ['whatsapp', '212770892279'],
     ['email', 'contact@softride.ma'],
